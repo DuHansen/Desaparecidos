@@ -1,0 +1,28 @@
+<?php
+session_start();
+
+// Verifica se o usuário está logado
+if (!isset($_SESSION['user'])) {
+  // Redireciona para o login
+  header('Location: ../index.html');
+  exit;
+}
+
+$user = $_SESSION['user'];
+?>
+<?php include '../includes/headerUser.php'; ?>
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Área Restrita</title>
+</head>
+<body>
+  <h2>Bem-vindo, <?= htmlspecialchars($user['email']) ?></h2>
+  <p>ID do usuário: <?= $user['id'] ?></p>
+  
+  <form action="../api/logout.php" method="post">
+    <button type="submit">Sair</button>
+  </form>
+</body>
+</html>
