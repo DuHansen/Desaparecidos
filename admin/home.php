@@ -7,15 +7,19 @@ if (!isset($_SESSION['user'])) {
   header('Location: ../index.html');
   exit;
 }
-
+$page = 'home';
 $user = $_SESSION['user'];
 ?>
-<?php include '../includes/headerUser.php'; ?>
+<?php include 'includes/headerUser.php'; ?>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Área Restrita</title>
+  <title>Home</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
 </head>
 <body>
   <h2>Bem-vindo, <?= htmlspecialchars($user['email']) ?></h2>

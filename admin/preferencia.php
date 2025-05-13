@@ -15,7 +15,11 @@ $user = $_SESSION['user'];
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>Área Restrita</title>
+  <title>Preferencia</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
 </head>
 <body>
   <h2>Preferencia <?= htmlspecialchars($user['email']) ?></h2>

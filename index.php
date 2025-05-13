@@ -1,48 +1,15 @@
 <?php include 'includes/header.php'; ?>
-<style>
-    body {
-        background: linear-gradient(135deg, #2a2a72, #009ffd);
-        color: white;
-        font-family: 'Arial', sans-serif;
-    }
-
-    .card {
-        transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-        border-radius: 15px;
-        height: 100%; /* Todos os cards com mesma altura */
-    }
-
-    .card:hover {
-        transform: scale(1.05);
-        box-shadow: 0px 10px 20px rgba(255, 255, 255, 0.2);
-    }
-
-    .card-img-top {
-        height: 250px; /* Definir altura fixa para as imagens */
-        object-fit: cover; /* Garante que a imagem preencha sem distorcer */
-        border-top-left-radius: 15px;
-        border-top-right-radius: 15px;
-    }
-
-    .fade-in {
-        opacity: 0;
-        animation: fadeIn 1s ease-in-out forwards;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-
-    .btn-danger {
-        transition: background 0.3s ease-in-out;
-    }
-
-    .btn-danger:hover {
-        background: #b30000;
-    }
-</style>
-
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/css/style.css"> 
+</head>
+<body>
 <main class="container py-5">
     <div class="text-center mb-4 fade-in">
         <h1 class="fw-bold">Lista de Desaparecidos</h1>
@@ -275,5 +242,6 @@
         <?php endif; ?>
     </div>
 </main>
-
+</body>
+</html>
 <?php include 'includes/footer.php'; ?>

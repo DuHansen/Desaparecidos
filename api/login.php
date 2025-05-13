@@ -4,7 +4,11 @@ header('Content-Type: application/json');
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-include '../config/db.php';
+// Dados de login pré-definidos (exemplo)
+$loginPredefinido = [
+  'email' => 'admin@teste.com',
+  'password' => '123456' // em produção, nunca armazene senhas em texto plano
+];
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -27,37 +31,18 @@ if (!$email || !$password) {
   exit;
 }
 
-try {
-  $conn = getDBConnection();
-  $stmt = $conn->prepare("SELECT * FROM dbdesaparecidos.usuario WHERE email = ? LIMIT 1");
-  $stmt->execute([$email]);
-  $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-  if ($user) {
-    error_log("Usuário encontrado: " . json_encode($user));
-  } else {
-    error_log("Nenhum usuário encontrado com o email: $email");
-  }
-
-  // IMPORTANTE: use password_verify se estiver usando hash
-  if ($user && $user['password'] === $password) {
-    $_SESSION['user'] = [
-      'id' => $user['id'],
-      'email' => $user['email']
-    ];
-    error_log("Login bem-sucedido para o usuário ID: " . $user['id']);
-    echo json_encode(['success' => true]);
-    exit;
-  } else {
-    error_log("Senha incorreta para o email: $email");
-  }
-
-} catch (Exception $e) {
-  error_log("Erro ao tentar logar: " . $e->getMessage());
-  http_response_code(500);
-  echo json_encode(['error' => 'Erro no servidor']);
+// Verificação com login pré-definido
+if ($email === $loginPredefinido['email'] && $password === $loginPredefinido['password']) {
+  $_SESSION['user'] = [
+    'id' => 1, // você pode definir um ID qualquer aqui
+    'email' => $email
+  ];
+  error_log("Login bem-sucedido com credenciais pré-definidas");
+  echo json_encode(['success' => true]);
+  exit;
+} else {
+  error_log("Credenciais inválidas para email: $email");
+  http_response_code(401);
+  echo json_encode(['error' => 'Credenciais inválidas']);
   exit;
 }
-
-http_response_code(401);
-echo json_encode(['error' => 'Credenciais inválidas']);

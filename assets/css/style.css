@@ -1,0 +1,118 @@
+/* ==========================================================================
+   General Styles
+   ========================================================================== */
+   body, main {
+    background: black;
+    color: white;
+    font-family: 'Arial', sans-serif;
+  }
+  
+  a {
+    text-decoration: none;
+  }
+  
+  /* Fade-in animation */
+  .fade-in {
+    opacity: 0;
+    animation: fadeIn 1s ease-in-out forwards;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  /* ==========================================================================
+     Components
+     ========================================================================== */
+  
+  /* Navbar */
+  .navbar-nav{
+    background-color: black;
+    color:#ffffff;
+  }
+  .navbar-custom {
+    background-color: #0d6efd;
+  }
+  
+  .nav-link {
+    color: rgba(255, 255, 255, 0.7);
+    transition: color 0.3s;
+  }
+  
+  .nav-link:hover,
+  .nav-link.active {
+    color: #ffffff !important;
+  }
+  
+  /* Dropdown Menu */
+  .dropdown-menu {
+    min-width: 200px;
+  }
+  
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  
+  /* Cards */
+  .card {
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    border-radius: 15px;
+    height: 100%;
+  }
+  
+  .card:hover {
+    transform: scale(1.05);
+    box-shadow: 0px 10px 20px rgba(255, 255, 255, 0.2);
+  }
+  
+  .card-img-top {
+    height: 250px;
+    object-fit: cover;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+  }
+  
+  /* Buttons */
+  .btn-danger {
+    transition: background 0.3s ease-in-out;
+  }
+  
+  .btn-danger:hover {
+    background: #b30000;
+  }
+  
+  /* ==========================================================================
+     Pages - Specific
+     ========================================================================== */
+  
+  /* Login Page */
+  .login-page {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+  }
+  
+  .login-card {
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Efeito ao clicar nos links do header */
+
+  
+
+  
+  .nav-link {
+    transition: all 0.3s ease;
+  }
+  
+  .nav-link.active {
+    color: #ffffff !important;
+    font-size: 1.1rem !important; /* IMPORTANTE */
+    transform: scale(1);
+  }
+  
+  
