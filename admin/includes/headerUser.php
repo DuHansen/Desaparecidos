@@ -191,9 +191,9 @@ $usuario = [
                                     <i class="fas fa-headset me-2"></i> Suporte
                                     <span class="badge bg-danger badge-notification">3</span>
                                 </a></li>
-                                <li><a class="dropdown-item dropdown-item-custom" href="logout.php">
-                                    <i class="fas fa-sign-out-alt me-2"></i> Sair
-                                </a></li>
+                                <li><a class="dropdown-item dropdown-item-custom" href="/desaparecidos/api/logout.php">
+    <i class="fas fa-sign-out-alt me-2"></i> Sair
+</a></li>
                             </ul>
                         </li>
                         <li class="nav-item">

@@ -6,7 +6,7 @@ const fs = require('fs');
     const page = await browser.newPage();
 
     try {
-        await page.goto('https://desaparecidos.pc.sc.gov.br/#/', { waitUntil: 'networkidle2' });
+        await page.goto('https://www.desaparecidos.pr.gov.br/desaparecidos/desaparecidos.do?action=iniciarProcesso&m=false', { waitUntil: 'networkidle2' });
 
         // Aguardar o seletor .photo-wrapper
         await page.waitForSelector('.photo-wrapper');
