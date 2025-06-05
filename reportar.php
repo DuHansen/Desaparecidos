@@ -309,15 +309,23 @@
   </div>
 </div>
 
-<!-- Mapa de desaparecimentos em SC -->
+<!-- Leaflet CSS e JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- Seção do Mapa com Bootstrap -->
 <section class="bg-light py-5">
   <div class="container">
     <h2 class="text-center mb-4"><i class="bi bi-map"></i> Desaparecimentos por Região de SC</h2>
     <div class="row align-items-center">
-      <div class="col-md-6">
-        <img src="assets/img/mapa-sc-desaparecidos.png" alt="Mapa de desaparecimentos em Santa Catarina" class="img-fluid rounded shadow">
+      
+      <!-- Coluna do Mapa (ocupa 12 col no mobile, 6 no desktop) -->
+      <div class="col-12 col-md-6 mb-4 mb-md-0">
+        <div id="map-sc" class="w-100 rounded shadow" style="height: 400px;"></div>
       </div>
-      <div class="col-md-6">
+
+      <!-- Coluna da Tabela -->
+      <div class="col-12 col-md-6">
         <div class="table-responsive">
           <table class="table table-striped">
             <thead class="table-dark">
@@ -328,31 +336,11 @@
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>Grande Florianópolis</td>
-                <td>850</td>
-                <td>34%</td>
-              </tr>
-              <tr>
-                <td>Vale do Itajaí</td>
-                <td>600</td>
-                <td>24%</td>
-              </tr>
-              <tr>
-                <td>Norte/Nordeste</td>
-                <td>450</td>
-                <td>18%</td>
-              </tr>
-              <tr>
-                <td>Oeste</td>
-                <td>350</td>
-                <td>14%</td>
-              </tr>
-              <tr>
-                <td>Sul</td>
-                <td>250</td>
-                <td>10%</td>
-              </tr>
+              <tr><td>Grande Florianópolis</td><td>850</td><td>34%</td></tr>
+              <tr><td>Vale do Itajaí</td><td>600</td><td>24%</td></tr>
+              <tr><td>Norte/Nordeste</td><td>450</td><td>18%</td></tr>
+              <tr><td>Oeste</td><td>350</td><td>14%</td></tr>
+              <tr><td>Sul</td><td>250</td><td>10%</td></tr>
             </tbody>
           </table>
         </div>
@@ -363,6 +351,29 @@
     </div>
   </div>
 </section>
+
+<!-- Script para exibir o mapa com marcadores por região -->
+<script>
+  const map = L.map('map-sc').setView([-27.45, -50.95], 7);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  const regioes = [
+    { nome: 'Grande Florianópolis', coords: [-27.6, -48.6], casos: 850 },
+    { nome: 'Vale do Itajaí', coords: [-27.0, -49.5], casos: 600 },
+    { nome: 'Norte/Nordeste', coords: [-26.3, -48.8], casos: 450 },
+    { nome: 'Oeste', coords: [-26.9, -52.5], casos: 350 },
+    { nome: 'Sul', coords: [-28.7, -49.4], casos: 250 }
+  ];
+
+  regioes.forEach(r => {
+    L.marker(r.coords).addTo(map)
+      .bindPopup(`<strong>${r.nome}</strong><br>Casos/ano: ${r.casos}`);
+  });
+</script>
+
 <script>
   // Validação do formulário
   (function() {

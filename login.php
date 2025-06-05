@@ -46,15 +46,10 @@
                 </div>
 
                 <div class="d-grid mb-3">
-                  <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-box-arrow-in-right me-2"></i> Entrar
+                  <button type="submit" class="btn bg-dark text-white">
+                    <i class="bi bi-box-arrow-in-right me-2 text-white"></i> Entrar
                   </button>
                 </div>
-
-                <div class="text-end mb-3">
-                  <a href="forgot-password.php" class="link-light small">Esqueceu a senha?</a>
-                </div>
-
                 <div id="error-message" class="alert alert-danger d-none" role="alert">
                   <i class="bi bi-exclamation-triangle-fill me-2"></i>
                   <span>Erro ao logar, verifique suas credenciais.</span>
@@ -75,14 +70,38 @@
   </main>
 
   <?php include 'includes/footer.php'; ?>
-   <script>
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const rememberCheckbox = document.getElementById('remember');
     const errorMessage = document.getElementById('error-message');
+
+    // Preenche email salvo
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+      emailInput.value = savedEmail;
+      rememberCheckbox.checked = true;
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+
+      if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+      }
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      // Salvar ou limpar email
+      if (rememberCheckbox.checked) {
+        localStorage.setItem('rememberedEmail', email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
 
       try {
         const response = await fetch('api/login.php', {
@@ -103,42 +122,6 @@
         errorMessage.textContent = 'Erro de conexão com o servidor.';
         errorMessage.classList.remove('d-none');
       }
-    });
-  </script>
-  <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const emailInput = document.getElementById('email');
-    const rememberCheckbox = document.getElementById('remember');
-
-    // Se já existe email salvo, preenche
-    const savedEmail = localStorage.getItem('rememberedEmail');
-    if (savedEmail) {
-      emailInput.value = savedEmail;
-      rememberCheckbox.checked = true;
-    }
-
-    // Ao enviar o formulário
-    const form = document.getElementById('loginForm');
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-
-      if (!form.checkValidity()) {
-        form.classList.add('was-validated');
-        return;
-      }
-
-      const email = emailInput.value;
-      const password = document.getElementById('password').value;
-
-      // Salva ou limpa
-      if (rememberCheckbox.checked) {
-        localStorage.setItem('rememberedEmail', email);
-      } else {
-        localStorage.removeItem('rememberedEmail');
-      }
-
-      // Continue o login normalmente...
-      // Aqui você pode inserir sua lógica de autenticação com fetch.
     });
   });
 </script>

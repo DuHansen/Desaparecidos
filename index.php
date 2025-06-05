@@ -1,3 +1,4 @@
+
 <?php include 'includes/header.php'; ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -8,30 +9,42 @@
   <meta name="description" content="Portal de pessoas desaparecidas em Santa Catarina. Ajude a reunir famílias.">
   <link href="assets/css/bootstrap-5.3.6-dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/style.css">
   <script src="assets/css/bootstrap-5.3.6-dist/js/bootstrap.bundle.min.js" defer></script>
 </head>
 <body>
-
 <?php
 // Função para calcular idade a partir da data de nascimento
 function calcularIdade($dataNascimento) {
     if (empty($dataNascimento)) return '-';
-    
     try {
         $hoje = new DateTime();
         $nascimento = new DateTime($dataNascimento);
         $idade = $nascimento->diff($hoje)->y;
-        
-        // Se tiver menos de 1 ano, mostra em meses
         if ($idade < 1) {
             $meses = $nascimento->diff($hoje)->m;
             return $meses . ' meses';
         }
-        
         return $idade . ' anos';
     } catch (Exception $e) {
         return '-';
+    }
+}
+
+// Função para calcular tempo desde o desaparecimento
+function calcularTempoDesaparecimento($dataDesaparecimento) {
+    if (empty($dataDesaparecimento)) return 'tempo desconhecido';
+    try {
+        $hoje = new DateTime();
+        $desaparecidoEm = new DateTime($dataDesaparecimento);
+        $intervalo = $desaparecidoEm->diff($hoje);
+        if ($intervalo->y > 0) return $intervalo->y . ' ano' . ($intervalo->y > 1 ? 's' : '');
+        if ($intervalo->m > 0) return $intervalo->m . ' mes' . ($intervalo->m > 1 ? 'es' : '');
+        if ($intervalo->d >= 7) return floor($intervalo->d / 7) . ' semana' . (floor($intervalo->d / 7) > 1 ? 's' : '');
+        if ($intervalo->d > 0) return $intervalo->d . ' dia' . ($intervalo->d > 1 ? 's' : '');
+        return 'menos de 24h';
+    } catch (Exception $e) {
+        return 'tempo desconhecido';
     }
 }
 
@@ -39,27 +52,16 @@ function calcularIdade($dataNascimento) {
 try {
     $baseUrl = 'http://localhost/Desaparecidos/api/desaparecidos.php';
     $params = [];
-
     if (!empty($_GET['filtro'])) {
         $params['filtro'] = $_GET['filtro'];
         $params['valor'] = $_GET['filtro'] === 'tempo' ? ($_GET['tempo'] ?? '') : ($_GET['valor'] ?? '');
     }
-
     $url = $baseUrl . (!empty($params) ? '?' . http_build_query($params) : '');
-    $context = stream_context_create([
-        'http' => ['timeout' => 5] // Timeout de 5 segundos
-    ]);
+    $context = stream_context_create(['http' => ['timeout' => 5]]);
     $json = @file_get_contents($url, false, $context);
-    
-    if ($json === false) {
-        throw new Exception("Não foi possível conectar ao servidor de dados.");
-    }
-    
+    if ($json === false) throw new Exception("Não foi possível conectar ao servidor de dados.");
     $pessoas = json_decode($json, true);
-    if (!is_array($pessoas)) {
-        throw new Exception("Dados recebidos são inválidos.");
-    }
-    
+    if (!is_array($pessoas)) throw new Exception("Dados recebidos são inválidos.");
     $maisRecentes = array_slice($pessoas, 0, 5);
 } catch (Exception $e) {
     $error_message = $e->getMessage();
@@ -67,34 +69,21 @@ try {
     $maisRecentes = [];
 }
 
-// ✅ Função para calcular tempo desde o desaparecimento
-function calcularTempoDesaparecimento($dataDesaparecimento) {
-    if (empty($dataDesaparecimento)) return 'tempo desconhecido';
-
-    try {
-        $hoje = new DateTime();
-        $desaparecidoEm = new DateTime($dataDesaparecimento);
-        $intervalo = $desaparecidoEm->diff($hoje);
-
-        if ($intervalo->y > 0) {
-            return $intervalo->y . ' ano' . ($intervalo->y > 1 ? 's' : '');
-        } elseif ($intervalo->m > 0) {
-            return $intervalo->m . ' mes' . ($intervalo->m > 1 ? 'es' : '');
-        } elseif ($intervalo->d >= 7) {
-            $semanas = floor($intervalo->d / 7);
-            return $semanas . ' semana' . ($semanas > 1 ? 's' : '');
-        } elseif ($intervalo->d > 0) {
-            return $intervalo->d . ' dia' . ($intervalo->d > 1 ? 's' : '');
-        } else {
-            return 'menos de 24h';
-        }
-    } catch (Exception $e) {
-        return 'tempo desconhecido';
-    }
-}
+// PAGINAÇÃO SEGURA
+$paginaAtual = isset($_GET['pagina']) ? max(1, intval($_GET['pagina'])) : 1;
+$porPagina = 20;
+$total = count($pessoas);
+$totalPaginas = max(1, ceil($total / $porPagina));
+$pessoasPaginadas = array_slice($pessoas, ($paginaAtual - 1) * $porPagina, $porPagina);
+$intervalo = 2;
+$inicio = max(1, $paginaAtual - $intervalo);
+$fim = min($totalPaginas, $paginaAtual + $intervalo);
+if ($paginaAtual <= $intervalo) $fim = min(5, $totalPaginas);
+if ($paginaAtual > $totalPaginas - $intervalo) $inicio = max(1, $totalPaginas - 4);
 ?>
 
-<main class="container py-5">
+
+<main class="py-5">
   <!-- Seção de alerta caso haja erro na API -->
   <?php if (!empty($error_message)): ?>
     <div class="alert alert-danger">
@@ -104,7 +93,7 @@ function calcularTempoDesaparecimento($dataDesaparecimento) {
 
   <!-- Carrossel com mais recentes -->
   <?php if (!empty($maisRecentes)): ?>
-  <section class="mb-5">
+  <section class="container mb-5">
     <h2 class="h4 mb-3 text-muted"><i class="bi bi-clock-history me-2"></i>Casos recentes</h2>
     <div id="carouselDesaparecidos" class="carousel slide shadow-lg rounded" data-bs-ride="carousel">
       <div class="carousel-inner rounded">
@@ -206,19 +195,41 @@ function calcularTempoDesaparecimento($dataDesaparecimento) {
     </div>
   </div>
   <?php endforeach; ?>
+  <div class="position-relative" style="height: 70vh;">
+  <!-- Imagem de fundo -->
+  <img src="assets/img/bg.png" alt="Background"
+       class="position-absolute top-0 start-0 w-100 h-100 object-fit-cover z-0">
 
-    <!-- Título e chamada para ação -->
-  <div class="text-center mb-5">
-    <h1 class="fw-bold text-danger">Desaparecidos em Santa Catarina</h1>
-    <p class="lead">Ajude a reunir famílias. Qualquer informação pode ser crucial.</p>
-    <div class="alert alert-warning d-inline-flex align-items-center">
-      <i class="bi bi-exclamation-triangle-fill me-2"></i>
-      Caso tenha qualquer informação, entre em contato imediatamente com a polícia (190) ou disque-denúncia (181).
+  <!-- Conteúdo centralizado -->
+  <div class="position-relative z-1 h-100 d-flex align-items-center justify-content-center text-center px-3">
+    <div>
+      <h1 class="fw-bold text-danger">Desaparecidos em Santa Catarina</h1>
+      <p class="lead">Ajude a reunir famílias. Qualquer informação pode ser crucial.</p>
+      
+      <div class="alert alert-warning d-inline-flex align-items-center justify-content-center mt-3">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        Caso tenha qualquer informação, entre em contato com a polícia (190) ou disque-denúncia (181).
+      </div>
+      
+      <div class="mt-4">
+        <a href="reportar.php" class="btn btn-outline-light px-4 py-2">
+          <i class="bi bi-person-plus"></i> Reportar Desaparecimento
+        </a>
+      </div>
     </div>
   </div>
+</div>
 
+  <script>
+    window.addEventListener("load", () => {
+      const elements = document.querySelectorAll('.slide-left, .slide-right');
+      elements.forEach((el, index) => {
+        setTimeout(() => el.classList.add('slide-in'), index * 300);
+      });
+    });
+  </script>
   <!-- Filtro de busca -->
-  <section class="bg-light p-4 rounded-3 shadow-sm mb-5">
+  <section class="container bg-light p-4 rounded-3 shadow-sm mb-5">
     <h2 class="h4 mb-4"><i class="bi bi-search me-2"></i>Buscar Desaparecidos</h2>
     <form method="GET" class="needs-validation" novalidate>
       <div class="row g-3 align-items-end">
@@ -257,16 +268,10 @@ function calcularTempoDesaparecimento($dataDesaparecimento) {
         </div>
       </div>
     </form>
-   <!-- Botão para reportar desaparecimento -->
-<div class="mt-4 text-center">
-  <a href="<?php echo htmlspecialchars('reportar.php'); ?>" class="btn btn-outline-danger">
-    <i class="bi bi-person-plus"></i> Reportar Desaparecimento
-  </a>
-</div>
   </section>
 
   <!-- Resultados da busca -->
-  <section>
+  <section class="container">
     <h2 class="h4 mb-3">
       <i class="bi bi-people-fill me-2"></i>
       <?= !empty($_GET) ? 'Resultados da Busca' : 'Pessoas Desaparecidas' ?>
@@ -279,7 +284,7 @@ function calcularTempoDesaparecimento($dataDesaparecimento) {
       </div>
     <?php else: ?>
       <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <?php foreach ($pessoas as $pessoa): ?>
+      <?php foreach ($pessoasPaginadas as $pessoa): ?>
           <div class="col">
             <div class="card h-100 shadow-sm">
               <div class="overflow-hidden" style="height: 300px;">
@@ -369,6 +374,39 @@ function calcularTempoDesaparecimento($dataDesaparecimento) {
       </div>
     <?php endif; ?>
   </section>
+  <!-- Paginação -->
+  <nav aria-label="Navegação de páginas" class="mt-5">
+  <div class="d-flex justify-content-center overflow-auto px-2">
+    <ul class="pagination d-flex flex-wrap justify-content-center gap-2 mb-0">
+      <?php if ($paginaAtual > 1): ?>
+        <li class="page-item">
+          <a class="page-link rounded-pill border-0 shadow-sm px-4 py-2 text-dark"
+             href="?<?= http_build_query(array_merge($_GET, ['pagina' => $paginaAtual - 1])) ?>">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        </li>
+      <?php endif; ?>
+
+      <?php for ($i = $inicio; $i <= $fim; $i++): ?>
+        <li class="page-item <?= $i == $paginaAtual ? 'active' : '' ?>">
+          <a class="page-link rounded-pill border-0 px-4 py-2 <?= $i == $paginaAtual ? 'bg-dark text-white shadow-sm' : 'bg-light text-dark' ?>"
+             href="?<?= http_build_query(array_merge($_GET, ['pagina' => $i])) ?>">
+            <?= $i ?>
+          </a>
+        </li>
+      <?php endfor; ?>
+
+      <?php if ($paginaAtual < $totalPaginas): ?>
+        <li class="page-item">
+          <a class="page-link rounded-pill border-0 shadow-sm px-4 py-2 text-dark"
+             href="?<?= http_build_query(array_merge($_GET, ['pagina' => $paginaAtual + 1])) ?>">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        </li>
+      <?php endif; ?>
+    </ul>
+  </div>
+</nav>
 </main>
 <script>
   // Script para alternar entre campos de filtro

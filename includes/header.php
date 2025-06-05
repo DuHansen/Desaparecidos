@@ -4,7 +4,7 @@
       <div class="container-fluid">
         <!-- LOGO -->
         <a class="navbar-brand d-flex align-items-center" href="./index.php">
-          <img src="./assets/logo.png" alt="Logo Onde Está Você?" width="150" height="75" class="me-2">
+          <img src="./assets/logo.png" alt="Logo Onde Está Você?" width="120" height="50" class="me-2">
         </a>
 
         <!-- BOTÃO TOGGLER PARA MOBILE -->

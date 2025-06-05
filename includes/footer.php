@@ -3,7 +3,7 @@
   <div class="container">
     <div class="row">
       <div class="col-md-4">
-        <h3 class="h5">Desaparecidos SC</h3>
+        <h3 class="h5">OndeTaVocê</h3>
         <p>Ajude a reunir famílias. Compartilhe informações responsavelmente.</p>
       </div>
       <div class="col-md-4">
@@ -11,7 +11,7 @@
         <ul class="list-unstyled">
           <li><i class="bi bi-telephone"></i> Polícia Militar: 190</li>
           <li><i class="bi bi-megaphone"></i> Disque Denúncia: 181</li>
-          <li><i class="bi bi-people"></i> Conselho Tutelar: (XX) XXXX-XXXX</li>
+          <li><i class="bi bi-people"></i> Conselho Tutelar: (48)3330-9501</li>
         </ul>
       </div>
       <div class="col-md-4">
@@ -26,7 +26,7 @@
     </div>
     <hr class="my-4">
     <div class="text-center">
-      <p class="small mb-0">© <?= date('Y') ?> Desaparecidos SC. Todos os direitos reservados.</p>
+      <p class="small mb-0">© <?= date('Y') ?> OndeTaVocê. Todos os direitos reservados.</p>
     </div>
   </div>
 </footer>
