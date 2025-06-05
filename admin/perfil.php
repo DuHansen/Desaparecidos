@@ -16,9 +16,9 @@ $user = $_SESSION['user'];
 <head>
   <meta charset="UTF-8" />
   <title>Perfil</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <!-- Bootstrap JS Bundle with Popper -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Bootstrap LOCAL -->
+  <link href="assets/css/bootstrap-5.3.6-dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="assets/css/bootstrap-5.3.6-dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
   <h2>Perfil <?= htmlspecialchars($user['email']) ?></h2>
