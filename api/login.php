@@ -7,43 +7,66 @@ error_reporting(E_ALL);
 // Define o fuso horário para Brasília
 date_default_timezone_set('America/Sao_Paulo');
 
-// Usuário fixo para testes
-$loginPredefinido = [
-  'email' => 'admin@teste.com',
-  'password' => '123456',
-  'nome' => 'Administrador'
-];
+// Conexão com o banco
+require_once '../includes/db.php';
 
-// Lê e decodifica JSON recebido
-$data = json_decode(file_get_contents("php://input"), true);
+// Lê o corpo da requisição
+$input = file_get_contents("php://input");
+$data = json_decode($input, true);
 
-// Validação básica
-if (!$data || !isset($data['email']) || !isset($data['password'])) {
-  http_response_code(400);
-  echo json_encode(['success' => false, 'error' => 'Requisição malformada']);
-  exit;
+// Validação da estrutura da requisição
+if (!is_array($data) || !isset($data['email']) || !isset($data['password'])) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Requisição malformada']);
+    exit;
 }
 
 $email = trim($data['email']);
 $password = trim($data['password']);
 
-// Verifica login
-if ($email === $loginPredefinido['email'] && $password === $loginPredefinido['password']) {
-  
-  // Cria o objeto DateTime com timezone de Brasília
-  $agora = new DateTime('now', new DateTimeZone('America/Sao_Paulo'));
+// Verifica se os campos não estão vazios
+if (empty($email) || empty($password)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'error' => 'Email e senha são obrigatórios.']);
+    exit;
+}
 
-  // Salva na sessão
-  $_SESSION['user'] = [
-    'id' => 1,
-    'nome' => $loginPredefinido['nome'],
-    'email' => $loginPredefinido['email'],
-    'login_time' => (new DateTime('now', new DateTimeZone('America/Sao_Paulo')))->format('Y-m-d H:i:s')
+// Consulta o usuário pelo e-mail
+try {
+   $stmt = $pdo->prepare("SELECT id, name AS nome, email, password, role FROM users WHERE email = :email LIMIT 1");
+    $stmt->bindParam(':email', $email);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-  ];
+    // Verifica a senha
+    if ($user && password_verify($password, $user['password'])) {
+        // Protege contra session fixation
+        session_regenerate_id(true);
 
-  echo json_encode(['success' => true]);
-} else {
-  http_response_code(401);
-  echo json_encode(['success' => false, 'error' => 'Credenciais inválidas']);
+        $_SESSION['user'] = [
+            'id' => $user['id'],
+            'nome' => $user['nome'],
+            'email' => $user['email'],
+            'role' => $user['role'],
+            'login_time' => (new DateTime('now', new DateTimeZone('America/Sao_Paulo')))->format('Y-m-d H:i:s')
+        ];
+
+
+        // Retorna sucesso
+        echo json_encode([
+            'success' => true,
+            'user' => [
+                'id' => $user['id'],
+                'nome' => $user['nome'],
+                'email' => $user['email']
+            ]
+        ]);
+    } else {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Credenciais inválidas']);
+    }
+
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Erro no banco de dados']);
 }

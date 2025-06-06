@@ -1,5 +1,5 @@
-<?php include 'includes/headerUser.php'; ?>
-
+<?php session_start();
+include 'includes/headerUser.php'; ?>
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
