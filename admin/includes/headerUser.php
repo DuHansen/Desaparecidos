@@ -150,7 +150,7 @@ $usuario = [
                 <!-- Barra de Pesquisa -->
                 <div class="search-box me-3">
                     <i class="fas fa-search search-icon"></i>
-                    <input class="form-control search-input" type="search" placeholder="Pesquisar desaparecidos...">
+                    <input class="form-control search-input" type="search" placeholder="Pesquisar desaparecidos..." id="pesquisaInput">
                 </div>
 
                 <!-- Menu do Usuário -->
@@ -191,21 +191,20 @@ $usuario = [
 
 <!-- Scripts -->
 <script>
-    // Ativar tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip']"))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+  const inputBusca = document.getElementById('pesquisaInput');
+  let timeout = null;
 
-    // Barra de pesquisa funcional
-    document.querySelector('.search-input').addEventListener('keyup', function(e) {
-        if (e.key === 'Enter') {
-            const termo = this.value.trim();
-            if (termo) {
-                window.location.href = `busca.php?q=${encodeURIComponent(termo)}`;
-            }
-        }
-    });
+  inputBusca.addEventListener('input', function () {
+    clearTimeout(timeout);
+    const valor = this.value.trim();
+
+    // Começa a buscar com 2+ letras
+    if (valor.length >= 2) {
+      timeout = setTimeout(() => {
+        window.location.href = `home.php?q=${encodeURIComponent(valor)}`;
+      }, 700); // tempo para evitar redirecionar a cada letra
+    }
+  });
 </script>
 <script src="/assets/js/bootstrap.bundle.min.js"></script>
 <script src="/assets/js/custom.js"></script>

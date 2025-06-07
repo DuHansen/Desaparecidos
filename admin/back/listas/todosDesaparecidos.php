@@ -1,83 +1,98 @@
 <?php
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET');
-header('Access-Control-Allow-Headers: Content-Type');
+require_once '../../includes/db.php';
 
-// Caminho para o arquivo JSON
-$jsonFile = __DIR__ . '/../../../db/desaparecidos.json';
+$filtro = $_GET['filtro'] ?? null;
+$valor = $_GET['valor'] ?? null;
 
 try {
-    // Verificar se o arquivo existe
-    if (!file_exists($jsonFile)) {
-        throw new Exception('Arquivo de dados não encontrado');
+    if ($filtro && $valor) {
+        if ($filtro === 'tempo') {
+            // Tempo será tratado em PHP
+            $stmt = $pdo->prepare("
+                SELECT id, nome_completo AS nome, apelido, DATE_FORMAT(data_desaparecimento, '%d/%m/%Y') AS desaparecidoEm,
+                       cidade, estado, foto, status, data_desaparecimento
+                FROM desaparecidos
+                WHERE status = 'desaparecido'
+            ");
+            $stmt->execute();
+            $dados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Aplica filtro de tempo em PHP
+            $filtrados = array_filter($dados, function($pessoa) use ($valor) {
+                $hoje = new DateTime();
+                $data = DateTime::createFromFormat('d/m/Y', $pessoa['desaparecidoEm']);
+                if (!$data) return false;
+                $dias = $hoje->diff($data)->days;
+
+                return match ($valor) {
+                    '1 semana'   => $dias <= 7,
+                    '1 mes'      => $dias <= 30,
+                    '3 meses'    => $dias <= 90,
+                    '6 meses'    => $dias <= 180,
+                    '1 ano'      => $dias <= 365,
+                    '2 anos+'    => $dias > 730,
+                    default      => false
+                };
+            });
+
+            header('Content-Type: application/json');
+            echo json_encode(array_values($filtrados));
+            exit;
+        }
+
+        // Segurança: só aceita campos permitidos
+        switch ($filtro) {
+            case 'nome':
+                $sql = "nome_completo LIKE :valor";
+                break;
+            case 'cidade':
+                $sql = "cidade LIKE :valor";
+                break;
+            case 'idade':
+                $sql = "TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) = :valor";
+                $valor = (int) $valor;
+                break;
+            default:
+                throw new Exception("Filtro inválido.");
+        }
+
+        $stmt = $pdo->prepare("
+            SELECT id, nome_completo AS nome, apelido, data_nascimento,
+                   DATE_FORMAT(data_desaparecimento, '%d/%m/%Y') AS desaparecidoEm,
+                   cidade, estado, foto, status
+            FROM desaparecidos
+            WHERE status = 'desaparecido' AND $sql
+        ");
+
+        // Aplica bind corretamente
+        if ($filtro === 'idade') {
+            $stmt->bindValue(':valor', $valor, PDO::PARAM_INT);
+        } else {
+            $stmt->bindValue(':valor', "%$valor%", PDO::PARAM_STR);
+        }
+
+    } else {
+        // Sem filtro, lista todos
+        $stmt = $pdo->prepare("
+            SELECT id, nome_completo AS nome, apelido, data_nascimento,
+                   DATE_FORMAT(data_desaparecimento, '%d/%m/%Y') AS desaparecidoEm,
+                   cidade, estado, foto, status
+            FROM desaparecidos
+            WHERE status = 'desaparecido'
+            ORDER BY data_desaparecimento DESC
+        ");
     }
 
-    // Ler o conteúdo do arquivo JSON
-    $jsonContent = file_get_contents($jsonFile);
-    $data = json_decode($jsonContent, true);
+    $stmt->execute();
+    $resultados = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Verificar se o JSON é válido
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        throw new Exception('Erro ao decodificar JSON: ' . json_last_error_msg());
-    }
+    header('Content-Type: application/json');
+    echo json_encode($resultados);
 
-    // Parâmetros da requisição (para DataTables)
-    $draw = isset($_GET['draw']) ? intval($_GET['draw']) : 1;
-    $start = isset($_GET['start']) ? intval($_GET['start']) : 0;
-    $length = isset($_GET['length']) ? intval($_GET['length']) : 30;
-    $search = isset($_GET['search']['value']) ? $_GET['search']['value'] : '';
-    $orderColumn = isset($_GET['order'][0]['column']) ? intval($_GET['order'][0]['column']) : 0;
-    $orderDir = isset($_GET['order'][0]['dir']) ? $_GET['order'][0]['dir'] : 'asc';
-
-    // Mapeamento das colunas para ordenação
-    $columns = [
-        0 => 'nome',
-        1 => 'idade',
-        2 => 'desaparecidoEm',
-        3 => 'cidade'
-    ];
-
-    // Aplicar filtro de busca se existir
-    if (!empty($search)) {
-        $filteredData = array_filter($data, function($item) use ($search) {
-            return stripos($item['nome'], $search) !== false || 
-                   stripos($item['cidade'], $search) !== false ||
-                   stripos($item['idade'], $search) !== false ||
-                   stripos($item['desaparecidoEm'], $search) !== false;
-        });
-        $data = array_values($filteredData); // Reindexar o array
-    }
-
-    // Ordenar os dados
-    if (isset($columns[$orderColumn])) {
-        $column = $columns[$orderColumn];
-        usort($data, function($a, $b) use ($column, $orderDir) {
-            if ($orderDir === 'asc') {
-                return $a[$column] <=> $b[$column];
-            } else {
-                return $b[$column] <=> $a[$column];
-            }
-        });
-    }
-
-    // Paginar os dados
-    $paginatedData = array_slice($data, $start, $length);
-
-    // Preparar resposta no formato esperado pelo DataTables
-    $response = [
-        'draw' => $draw,
-        'recordsTotal' => count($data),
-        'recordsFiltered' => count($data),
-        'data' => $paginatedData
-    ];
-
-    echo json_encode($response);
-
-} catch (Exception $e) {
+} catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode([
-        'error' => $e->getMessage(),
-        'success' => false
-    ]);
+    echo json_encode(['erro' => 'Erro na consulta: ' . $e->getMessage()]);
+} catch (Exception $e) {
+    http_response_code(400);
+    echo json_encode(['erro' => 'Requisição inválida: ' . $e->getMessage()]);
 }

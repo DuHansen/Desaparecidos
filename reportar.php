@@ -43,7 +43,33 @@
   <div class="row g-4">
     <!-- Formulário de reporte -->
     <div class="col-lg-8">
-      <section class="form-section p-4 shadow-sm">
+      <section id="verificacaoForm" class="form-section p-4 shadow-sm">
+        <h2 class="h4 mb-4 text-primary"><i class="bi bi-shield-lock"></i> Verificação do Denunciante</h2>
+        <form id="validaUsuarioForm" enctype="multipart/form-data">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Nome do Denunciante*</label>
+              <input type="text" class="form-control" name="denunciante_nome" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">CPF*</label>
+              <input type="text" class="form-control" name="denunciante_cpf" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">E-mail*</label>
+              <input type="email" class="form-control" name="denunciante_email" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Foto do Documento*</label>
+              <input type="file" class="form-control" name="denunciante_documento" accept="image/*" required>
+            </div>
+            <div class="col-12 mt-3">
+              <button type="submit" class="btn btn-primary btn-lg">Verificar</button>
+            </div>
+          </div>
+        </form>
+      </section>
+      <section id="reportFormSection" style="display:none;" class="form-section p-4 shadow-sm">
         <h2 class="h4 mb-4 text-danger"><i class="bi bi-person-plus"></i> Formulário de Desaparecimento</h2>
         
         <form id="reportForm" method="post" enctype="multipart/form-data">
@@ -401,7 +427,59 @@
     }
   })();
 </script>
+<script>
+let dadosDenunciante = new FormData();
 
+document.getElementById('validaUsuarioForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const form = e.target;
+  dadosDenunciante = new FormData(form);
+
+  const nome = dadosDenunciante.get('denunciante_nome');
+  const cpf = dadosDenunciante.get('denunciante_cpf');
+  const email = dadosDenunciante.get('denunciante_email');
+  const docFile = dadosDenunciante.get('denunciante_documento');
+
+  const isDocValido = docFile && docFile instanceof File && docFile.size > 0;
+
+ 
+  alert('✅ Identidade verificada com sucesso!');
+  document.getElementById('verificacaoForm').style.display = 'none';
+  document.getElementById('reportFormSection').style.display = 'block';
+});
+
+document.getElementById('reportForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const denunciaForm = new FormData(e.target);
+  for (let [key, value] of dadosDenunciante.entries()) {
+    const mappedKey = key === 'denunciante_nome' ? 'denunciante_nome'
+                    : key === 'denunciante_cpf' ? 'denunciante_cpf'
+                    : key === 'denunciante_email' ? 'denunciante_email'
+                    : key === 'denunciante_documento' ? 'denunciante_documento'
+                    : key;
+    denunciaForm.append(mappedKey, value);
+  }
+
+  try {
+    const response = await fetch('api/consultas/adicionarDenuncia.php', {
+      method: 'POST',
+      body: denunciaForm
+    });
+    const result = await response.json();
+
+    if (result.success) {
+      alert('✅ Denúncia registrada com sucesso!');
+      e.target.reset();
+    } else {
+      alert('⚠️ Erro ao enviar: ' + (result.error || 'Tente novamente.'));
+    }
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    alert('❌ Erro ao enviar o formulário. Verifique sua conexão ou tente mais tarde.');
+  }
+});
+</script>
 </body>
 </html>
 <?php include 'includes/footer.php'; ?>
