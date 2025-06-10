@@ -5,7 +5,18 @@ if (!isset($_SESSION['user'])) {
   exit;
 }
 $user = $_SESSION['user'];
+
+// Inclui a função que recupera o total de desaparecidos
+include 'back/consultas/pegarDesaparecidos.php';
+// Recupera os dados dos cards
+$totalDesaparecidos = $dashboardData['totalDesaparecidos'];
+$totalEncontrados = $dashboardData['totalEncontrados'];
+$totalRecent = $dashboardData['totalRecent'];
+$taxaResolucao = $dashboardData['taxaResolucao'];
+$percentageRecent = $dashboardData['percentageRecent'];
+$percentageResolution = $dashboardData['percentageResolution'];
 ?>
+
 <?php include 'includes/headerUser.php'; ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -23,49 +34,48 @@ $user = $_SESSION['user'];
   <div class="container-xl">
     <div class="row g-4">
       
-      <!-- CARD: Total de Desaparecidos -->
+       <!-- CARD: Total de Desaparecidos -->
       <div class="col-sm-6 col-lg-3">
         <div class="card shadow-sm border-0 rounded h-100">
           <div class="card-body">
             <h6 class="text-muted">Total de Desaparecidos</h6>
             <div class="d-flex align-items-center">
-              <h2 class="mb-0 me-3">1,248</h2>
-              <span class="text-success small"><i class="fas fa-arrow-up me-1"></i> 12.5%</span>
+              <h2 class="mb-0 me-3"><?= $totalDesaparecidos ?></h2>
             </div>
             <div class="progress mt-3" style="height: 5px;">
               <div class="progress-bar bg-primary" style="width: 75%"></div>
             </div>
           </div>
         </div>
-      </div>
+      </div>   
 
-      <!-- CARD: Encontrados -->
+      <!-- CARD: Pessoas Encontradas -->
       <div class="col-sm-6 col-lg-3">
         <div class="card shadow-sm border-0 rounded h-100">
           <div class="card-body">
             <h6 class="text-muted">Pessoas Encontradas</h6>
             <div class="d-flex align-items-center">
-              <h2 class="mb-0 me-3">876</h2>
-              <span class="text-success small"><i class="fas fa-arrow-up me-1"></i> 8.3%</span>
+              <h2 class="mb-0 me-3"><?= $totalEncontrados ?></h2>
+              <span class="text-success small"><i class="fas fa-arrow-up me-1"></i> <?= $percentageResolution ?>%</span>
             </div>
             <div class="progress mt-3" style="height: 5px;">
-              <div class="progress-bar bg-success" style="width: 65%"></div>
+              <div class="progress-bar bg-success" style="width: <?= $percentageResolution ?>%"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- CARD: Desaparecidos Recentes -->
+      <!-- CARD: Desaparecidos Recentes (7 dias) -->
       <div class="col-sm-6 col-lg-3">
         <div class="card shadow-sm border-0 rounded h-100">
           <div class="card-body">
             <h6 class="text-muted">Desaparecidos (7 dias)</h6>
             <div class="d-flex align-items-center">
-              <h2 class="mb-0 me-3">84</h2>
-              <span class="text-danger small"><i class="fas fa-arrow-down me-1"></i> 3.2%</span>
+              <h2 class="mb-0 me-3"><?= $totalRecent ?></h2>
+              <span class="text-danger small"><i class="fas fa-arrow-down me-1"></i> <?= $percentageRecent ?>%</span>
             </div>
             <div class="progress mt-3" style="height: 5px;">
-              <div class="progress-bar bg-warning" style="width: 45%"></div>
+              <div class="progress-bar bg-warning" style="width: <?= $percentageRecent ?>%"></div>
             </div>
           </div>
         </div>
@@ -77,11 +87,11 @@ $user = $_SESSION['user'];
           <div class="card-body">
             <h6 class="text-muted">Taxa de Resolução</h6>
             <div class="d-flex align-items-center">
-              <h2 class="mb-0 me-3">70.2%</h2>
-              <span class="text-success small"><i class="fas fa-arrow-up me-1"></i> 5.1%</span>
+              <h2 class="mb-0 me-3"><?= $taxaResolucao ?>%</h2>
+              <span class="text-success small"><i class="fas fa-arrow-up me-1"></i> <?= $percentageResolution ?>%</span>
             </div>
             <div class="progress mt-3" style="height: 5px;">
-              <div class="progress-bar bg-info" style="width: 70%"></div>
+              <div class="progress-bar bg-info" style="width: <?= $percentageResolution ?>%"></div>
             </div>
           </div>
         </div>
@@ -206,141 +216,170 @@ $user = $_SESSION['user'];
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     // 1. Gráfico de Linha - Desaparecidos por Dia
-    const chart1 = new ApexCharts(document.querySelector("#chart-desaparecidos-dia"), {
-        chart: {
-            type: 'line',
-            height: '100%',
-            toolbar: { show: false },
-            animations: { enabled: true }
-        },
-        series: [{
-            name: 'Desaparecidos',
-            data: [12, 15, 8, 10, 7, 14, 18, 20, 15, 12, 9, 13, 16, 11, 8, 10, 14, 17, 19, 15, 12, 10, 13, 16, 18, 14, 11, 9, 12, 15]
-        }],
-        xaxis: {
-            categories: Array.from({length: 30}, (_, i) => `${i+1}/05/2023`),
-            labels: { style: { colors: '#6c757d' } }
-        },
-        colors: ['#206bc4'],
-        stroke: { width: 3, curve: 'smooth' },
-        markers: { size: 5 },
-        grid: { borderColor: '#e9ecef' },
-        tooltip: {
-            y: { formatter: (val) => `${val} pessoas` }
-        },
-        responsive: [{
-            breakpoint: 768,
-            options: { chart: { height: 300 } }
-        }]
-    });
-    chart1.render();
-    
+    fetch('back/consultas/desaparecidosPorDia.php')  // Fazendo a requisição para a API
+        .then(response => response.json())
+        .then(data => {
+            const chart1 = new ApexCharts(document.querySelector("#chart-desaparecidos-dia"), {
+                chart: {
+                    type: 'line',
+                    height: '100%',
+                    toolbar: { show: false },
+                    animations: { enabled: true }
+                },
+                series: [{
+                    name: 'Desaparecidos',
+                    data: data.data // Dados de desaparecidos por dia
+                }],
+                xaxis: {
+                    categories: data.labels, // As datas dos últimos 30 dias
+                    labels: { style: { colors: '#6c757d' } }
+                },
+                colors: ['#206bc4'],
+                stroke: { width: 3, curve: 'smooth' },
+                markers: { size: 5 },
+                grid: { borderColor: '#e9ecef' },
+                tooltip: {
+                    y: { formatter: (val) => `${val} pessoas` }
+                },
+                responsive: [{
+                    breakpoint: 768,
+                    options: { chart: { height: 300 } }
+                }]
+            });
+            chart1.render(); // Renderiza o gráfico
+        })
+        .catch(error => console.error('Erro ao carregar dados do gráfico:', error));
+});
+</script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
     // 2. Gráfico de Pizza - Status dos Desaparecidos
-    const chart2 = new ApexCharts(document.querySelector("#chart-status-desaparecidos"), {
-        chart: {
-            type: 'donut',
-            height: '100%'
-        },
-        series: [876, 372],
-        labels: ['Encontrados', 'Desaparecidos'],
-        colors: ['#5eba00', '#cd201f'],
-        legend: { position: 'bottom' },
-        plotOptions: {
-            pie: {
-                donut: {
-                    labels: {
-                        show: true,
-                        total: {
-                            show: true,
-                            label: 'Total',
-                            formatter: () => '1,248'
+    fetch('back/consultas/statusDesaparecidos.php')  // Fazendo a requisição para a API
+        .then(response => response.json())
+        .then(data => {
+            const chart2 = new ApexCharts(document.querySelector("#chart-status-desaparecidos"), {
+                chart: {
+                    type: 'donut',
+                    height: '100%'
+                },
+                series: [data.encontrados, data.desaparecidos], // Dados de encontrados e desaparecidos
+                labels: ['Encontrados', 'Desaparecidos'],
+                colors: ['#5eba00', '#cd201f'],
+                legend: { position: 'bottom' },
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            labels: {
+                                show: true,
+                                total: {
+                                    show: true,
+                                    label: 'Total',
+                                    formatter: () => (data.encontrados + data.desaparecidos).toString()
+                                }
+                            }
                         }
                     }
-                }
-            }
-        },
-        responsive: [{
-            breakpoint: 768,
-            options: { chart: { height: 300 } }
-        }]
-    });
-    chart2.render();
-    
+                },
+                responsive: [{
+                    breakpoint: 768,
+                    options: { chart: { height: 300 } }
+                }]
+            });
+            chart2.render(); // Renderiza o gráfico
+        })
+        .catch(error => console.error('Erro ao carregar dados do gráfico:', error));
+});
+    </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
     // 3. Gráfico de Barras - Desaparecidos por Estado
-    const chart3 = new ApexCharts(document.querySelector("#chart-desaparecidos-estado"), {
-        chart: {
-            type: 'bar',
-            height: '100%',
-            toolbar: { show: false }
-        },
-        series: [{
-            name: 'Desaparecidos',
-            data: [320, 245, 187, 156, 132, 98, 87, 76, 65, 54]
-        }],
-        xaxis: {
-            categories: ['SP', 'RJ', 'MG', 'RS', 'PR', 'SC', 'BA', 'PE', 'CE', 'DF'],
-            labels: { style: { colors: '#6c757d' } }
-        },
-        colors: ['#4299e1'],
-        plotOptions: {
-            bar: {
-                borderRadius: 4,
-                horizontal: false,
-                columnWidth: '55%',
-            }
-        },
-        dataLabels: { enabled: false },
-        grid: { borderColor: '#e9ecef' },
-        tooltip: {
-            y: { formatter: (val) => `${val} pessoas` }
-        },
-        responsive: [{
-            breakpoint: 768,
-            options: { 
-                chart: { height: 400 },
-                plotOptions: { bar: { horizontal: true } }
-            }
-        }]
-    });
-    chart3.render();
-    
+    fetch('back/consultas/desaparecidoPorEstado.php')  // Fazendo a requisição para a API
+        .then(response => response.json())
+        .then(data => {
+            const chart3 = new ApexCharts(document.querySelector("#chart-desaparecidos-estado"), {
+                chart: {
+                    type: 'bar',
+                    height: '100%',
+                    toolbar: { show: false }
+                },
+                series: [{
+                    name: 'Desaparecidos',
+                    data: data.totais // Dados de desaparecidos por estado
+                }],
+                xaxis: {
+                    categories: data.estados, // Estados onde ocorreram desaparecimentos
+                    labels: { style: { colors: '#6c757d' } }
+                },
+                colors: ['#4299e1'],
+                plotOptions: {
+                    bar: {
+                        borderRadius: 4,
+                        horizontal: false,
+                        columnWidth: '55%',
+                    }
+                },
+                dataLabels: { enabled: false },
+                grid: { borderColor: '#e9ecef' },
+                tooltip: {
+                    y: { formatter: (val) => `${val} pessoas` }
+                },
+                responsive: [{
+                    breakpoint: 768,
+                    options: { 
+                        chart: { height: 400 },
+                        plotOptions: { bar: { horizontal: true } }
+                    }
+                }]
+            });
+            chart3.render(); // Renderiza o gráfico
+        })
+        .catch(error => console.error('Erro ao carregar dados do gráfico:', error));
+});
+      </script>
+  <script>
+   document.addEventListener("DOMContentLoaded", function () {
     // 4. Gráfico de Área - Evolução de Cadastros
-    const chart4 = new ApexCharts(document.querySelector("#chart-evolucao-cadastros"), {
-        chart: {
-            type: 'area',
-            height: '100%',
-            toolbar: { show: false },
-            stacked: false
-        },
-        series: [{
-            name: 'Total Acumulado',
-            data: [120, 235, 320, 430, 520, 635, 750, 870, 980, 1050, 1170, 1248]
-        }],
-        xaxis: {
-            categories: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
-            labels: { style: { colors: '#6c757d' } }
-        },
-        colors: ['#3d8bfd'],
-        fill: {
-            type: 'gradient',
-            gradient: {
-                shadeIntensity: 1,
-                opacityFrom: 0.7,
-                opacityTo: 0.3,
-            }
-        },
-        dataLabels: { enabled: false },
-        stroke: { curve: 'smooth', width: 2 },
-        grid: { borderColor: '#e9ecef' },
-        tooltip: {
-            y: { formatter: (val) => `${val} pessoas` }
-        },
-        responsive: [{
-            breakpoint: 768,
-            options: { chart: { height: 300 } }
-        }]
-    });
-    chart4.render();
+    fetch('back/consultas/desaparecidosAcumulado.php')  // Fazendo a requisição para a API
+        .then(response => response.json())
+        .then(data => {
+            const chart4 = new ApexCharts(document.querySelector("#chart-evolucao-cadastros"), {
+                chart: {
+                    type: 'area',
+                    height: '100%',
+                    toolbar: { show: false },
+                    stacked: false
+                },
+                series: [{
+                    name: 'Total Acumulado',
+                    data: data.data // Dados de cadastros acumulados por mês
+                }],
+                xaxis: {
+                    categories: data.labels, // Meses (Jan, Fev, ...)
+                    labels: { style: { colors: '#6c757d' } }
+                },
+                colors: ['#3d8bfd'],
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.7,
+                        opacityTo: 0.3,
+                    }
+                },
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth', width: 2 },
+                grid: { borderColor: '#e9ecef' },
+                tooltip: {
+                    y: { formatter: (val) => `${val} pessoas` }
+                },
+                responsive: [{
+                    breakpoint: 768,
+                    options: { chart: { height: 300 } }
+                }]
+            });
+            chart4.render(); // Renderiza o gráfico
+        })
+        .catch(error => console.error('Erro ao carregar dados do gráfico:', error));
 });
 </script>
 </body>

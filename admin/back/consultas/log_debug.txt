@@ -1,8 +1,0 @@
-Array
-(
-    [id] => 13
-    [nome] => ANA KAROLYNE TERTULIANO FERRAZ
-    [cidade] => SÃO JOSÉ
-    [data_desaparecimento] => 2011-01-01
-    [foto] => https://devs.pc.sc.gov.br/servicos/desaparecidos/images/100186089/f5716118-cda8-4947-8004-f2c320e04263.jpg
-)
