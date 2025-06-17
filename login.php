@@ -69,62 +69,55 @@
     </div>
   </main>
 
-  <?php include 'includes/footer.php'; ?>
-  <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById('loginForm');
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const rememberCheckbox = document.getElementById('remember');
-    const errorMessage = document.getElementById('error-message');
+<?php include 'includes/footer.php'; ?>
+<script>
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
 
-    // Preenche email salvo
-    const savedEmail = localStorage.getItem('rememberedEmail');
-    if (savedEmail) {
-      emailInput.value = savedEmail;
-      rememberCheckbox.checked = true;
-    }
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+  await fetch('http://localhost:8000/sanctum/csrf-cookie', { credentials: 'include' });
+  const xsrfToken = getCookie('XSRF-TOKEN');
 
-      if (!form.checkValidity()) {
-        form.classList.add('was-validated');
-        return;
-      }
-
-      const email = emailInput.value.trim();
-      const password = passwordInput.value.trim();
-
-      // Salvar ou limpar email
-      if (rememberCheckbox.checked) {
-        localStorage.setItem('rememberedEmail', email);
-      } else {
-        localStorage.removeItem('rememberedEmail');
-      }
-
-      try {
-        const response = await fetch('api/login.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-          window.location.href = 'admin/home.php';
-        } else {
-          errorMessage.textContent = data.error || 'Erro ao logar';
-          errorMessage.classList.remove('d-none');
-        }
-      } catch (error) {
-        errorMessage.textContent = 'Erro de conexão com o servidor.';
-        errorMessage.classList.remove('d-none');
-      }
-    });
+  const response = await fetch('http://localhost:8000/api/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-XSRF-TOKEN': decodeURIComponent(xsrfToken)
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      email: document.getElementById('email').value,
+      password: document.getElementById('password').value
+    })
   });
+
+  const data = await response.json();
+
+  if (response.ok && data.success) {
+    if (response.ok && data.success) {
+  // Cria sessão local em PHP puro
+  await fetch('api/cria_sessao.php', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data.user)  // ← usuário retornado pelo Laravel
+  });
+
+  // Redireciona para a home do sistema
+  window.location.href = 'admin/home.php';
+}
+  } else {
+    document.getElementById('error-message').textContent = data.message || 'Falha no login!';
+    document.getElementById('error-message').classList.remove('d-none');
+  }
+});
 </script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

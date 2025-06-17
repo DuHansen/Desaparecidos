@@ -1,26 +1,32 @@
 <?php
+// Inicializa sessão, caso ainda não esteja iniciada
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Usuários permitidos por perfil
 $permitidos = ['admin', 'user'];
 
+// Verifica se usuário está autenticado e tem papel autorizado
 if (!isset($_SESSION['user']) || !in_array($_SESSION['user']['role'], $permitidos)) {
     header('Location: ../index.php');
     exit;
 }
 
-
-// Redireciona para HTTPS se necessário
-if (!isset($_SERVER['HTTPS']) || $_SERVER['HTTPS'] !== 'on') {
+// Redireciona para HTTPS apenas em ambiente de produção
+if ($_SERVER['HTTP_HOST'] !== 'localhost' && (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] !== 'on')) {
     $https_url = "https://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
     header("Location: $https_url", true, 301);
     exit();
 }
 
-// Dados do usuário logado
+// Dados do usuário logado (sessão já validada)
 $usuario = [
     'nome' => $_SESSION['user']['nome'],
     'email' => $_SESSION['user']['email'],
     'id' => $_SESSION['user']['id'],
-    'avatar' => 'https://randomuser.me/api/portraits/men/32.jpg', // avatar fixo por enquanto
-    'perfil' => 'admin' // opcional
+    'avatar' => 'https://randomuser.me/api/portraits/men/32.jpg', // avatar temporário fixo
+    'perfil' => $_SESSION['user']['role']
 ];
 ?>
 <!DOCTYPE html>
@@ -172,9 +178,12 @@ $usuario = [
                                 <i class="fas fa-headset me-2"></i> Suporte
                                 <span class="badge bg-danger badge-notification">3</span>
                             </a></li>
-                            <li><a class="dropdown-item dropdown-item-custom" href="/desaparecidos/api/logout.php">
+                           <li>
+                            <a class="dropdown-item dropdown-item-custom" href="#" onclick="apiLogout(); return false;">
                                 <i class="fas fa-sign-out-alt me-2"></i> Sair
-                            </a></li>
+                            </a>
+                            </li>
+
                         </ul>
                     </li>
                     <li class="nav-item">
@@ -205,6 +214,48 @@ $usuario = [
       }, 700); // tempo para evitar redirecionar a cada letra
     }
   });
+</script>
+<script>
+async function apiLogout() {
+  try {
+    // Garante CSRF cookie antes de logout
+    await fetch('http://localhost:8000/sanctum/csrf-cookie', { credentials: 'include' });
+
+    const xsrfToken = getCookie('XSRF-TOKEN');
+
+    const response = await fetch('http://localhost:8000/api/logout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-XSRF-TOKEN': xsrfToken
+      },
+      credentials: 'include'
+    });
+
+    // ⚠️ Certifique-se que o Laravel realmente retorna JSON
+    const data = await response.json();
+    console.log(data);
+    if (response.ok && data.success) {
+      // Remove sessão local se estiver usando PHP puro
+      await fetch('back/logout.php'); // se você criou essa rota
+
+      // Redireciona normalmente
+      window.location.href = '../index.php';
+    } else {
+      alert('Erro ao fazer logout. Tente novamente.');
+    }
+  } catch (error) {
+    console.error("Erro ao desconectar:", error);
+    alert("Falha ao se desconectar.");
+  }
+}
+
+// Função para pegar cookie (se já não tiver em outro lugar do projeto)
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
 </script>
 <script src="/assets/js/bootstrap.bundle.min.js"></script>
 <script src="/assets/js/custom.js"></script>

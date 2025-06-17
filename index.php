@@ -36,7 +36,9 @@ function calcularTempoDesaparecimento($dataDesaparecimento) {
     if (empty($dataDesaparecimento)) return 'tempo desconhecido';
     try {
         $hoje = new DateTime();
-        $desaparecidoEm = new DateTime($dataDesaparecimento);
+        $desaparecidoEm = DateTime::createFromFormat('d/m/Y', $dataDesaparecimento);
+        if (!$desaparecidoEm) return 'tempo desconhecido';
+        
         $intervalo = $desaparecidoEm->diff($hoje);
         if ($intervalo->y > 0) return $intervalo->y . ' ano' . ($intervalo->y > 1 ? 's' : '');
         if ($intervalo->m > 0) return $intervalo->m . ' mes' . ($intervalo->m > 1 ? 'es' : '');
@@ -50,21 +52,53 @@ function calcularTempoDesaparecimento($dataDesaparecimento) {
 
 // Busca os dados da API com tratamento de erros
 try {
-    $baseUrl = 'http://localhost/Desaparecidos/api/desaparecidos.php';
+    $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
+    $apiUrl = "$baseUrl/api/desaparecidos.php";
+    
     $params = [];
     if (!empty($_GET['filtro'])) {
-        $params['filtro'] = $_GET['filtro'];
-        $params['valor'] = $_GET['filtro'] === 'tempo' ? ($_GET['tempo'] ?? '') : ($_GET['valor'] ?? '');
+        $params['filtro'] = htmlspecialchars($_GET['filtro']);
+        $params['valor'] = $_GET['filtro'] === 'tempo' ? 
+            (htmlspecialchars($_GET['tempo'] ?? '')) : 
+            (htmlspecialchars($_GET['valor'] ?? ''));
     }
-    $url = $baseUrl . (!empty($params) ? '?' . http_build_query($params) : '');
-    $context = stream_context_create(['http' => ['timeout' => 5]]);
-    $json = @file_get_contents($url, false, $context);
-    if ($json === false) throw new Exception("Não foi possível conectar ao servidor de dados.");
+    
+    $url = $apiUrl . (!empty($params) ? '?' . http_build_query($params) : '');
+    
+    // Usando cURL para melhor controle da requisição
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Apenas para desenvolvimento
+    $json = curl_exec($ch);
+    
+    if (curl_errno($ch)) {
+        throw new Exception("Erro na conexão: " . curl_error($ch));
+    }
+    
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    if ($httpCode !== 200) {
+        throw new Exception("Erro HTTP $httpCode ao acessar a API");
+    }
+    
+    curl_close($ch);
+    
     $pessoas = json_decode($json, true);
-    if (!is_array($pessoas)) throw new Exception("Dados recebidos são inválidos.");
+    
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        throw new Exception("JSON inválido recebido da API. Erro: " . json_last_error_msg());
+    }
+    
+    if (!is_array($pessoas)) {
+        throw new Exception("Formato de dados inesperado");
+    }
+    
     $maisRecentes = array_slice($pessoas, 0, 5);
+    
 } catch (Exception $e) {
     $error_message = $e->getMessage();
+    error_log("Erro na API: " . $error_message);
     $pessoas = [];
     $maisRecentes = [];
 }
@@ -82,12 +116,16 @@ if ($paginaAtual <= $intervalo) $fim = min(5, $totalPaginas);
 if ($paginaAtual > $totalPaginas - $intervalo) $inicio = max(1, $totalPaginas - 4);
 ?>
 
-
 <main class="py-5">
   <!-- Seção de alerta caso haja erro na API -->
   <?php if (!empty($error_message)): ?>
     <div class="alert alert-danger">
       <i class="bi bi-exclamation-octagon-fill"></i> Erro ao carregar dados: <?= htmlspecialchars($error_message) ?>
+      <?php if (isset($url)): ?>
+        <div class="mt-2">
+          <small class="text-muted">URL: <?= htmlspecialchars($url) ?></small>
+        </div>
+      <?php endif; ?>
     </div>
   <?php endif; ?>
 

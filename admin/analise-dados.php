@@ -134,7 +134,7 @@ $percentageResolution = $dashboardData['percentageResolution'];
       <div class="col-xl-12">
         <div class="card shadow-sm border-0 rounded">
           <div class="card-header bg-light">
-            <h5 class="mb-0">Evolução de Cadastros (Acumulado)</h5>
+            <h5 class="mb-0">Evolução de desaparecidos (Acumulado)</h5>
           </div>
           <div class="card-body">
             <div id="chart-evolucao-cadastros" style="min-height: 350px;"></div>

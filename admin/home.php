@@ -194,73 +194,81 @@ $(document).ready(function() {
   let itemAtual = null;
 
   function carregarDados() {
-const termo = new URLSearchParams(window.location.search).get('q') || '';
-const url = termo ? `back/listas/todosDesaparecidos.php?filtro=nome&valor=${encodeURIComponent(termo)}` : 'back/listas/todosDesaparecidos.php';
+  const termo = new URLSearchParams(window.location.search).get('q') || '';
+  const pagina = parseInt(new URLSearchParams(window.location.search).get('pagina')) || 1;
+  const baseUrl = 'http://localhost:8000'; // ajuste para sua porta correta
+  const url = termo
+    ? `${baseUrl}/api/desaparecidos?filtro=nome&valor=${encodeURIComponent(termo)}&page=${pagina}&limit=${itensPorPagina}`
+    : `${baseUrl}/api/desaparecidos?page=${pagina}&limit=${itensPorPagina}`;
 
-$.ajax({
-  url: url,
-  type: 'GET',
-  dataType: 'json',
-  success: function(response) {
-    dados = response;
-    exibirPagina(paginaAtual);
-    criarPaginacao();
-  },
-  error: function(xhr, status, error) {
-    console.error("Erro:", status, error);
-  }
-});
-  }
+
+  $.ajax({
+    url: url,
+    type: 'GET',
+    dataType: 'json',
+    success: function(response) {
+      dados = response.data;
+      exibirPagina(pagina);         // ainda usa o array paginado
+      criarPaginacao(response);     // agora funciona corretamente
+    }
+    ,
+    error: function(xhr, status, error) {
+      console.error("Erro:", status, error);
+    }
+  });}
 
   function exibirPagina(pagina) {
-    paginaAtual = pagina;
-    const inicio = (pagina - 1) * itensPorPagina;
-    const fim = inicio + itensPorPagina;
-    const itensPagina = dados.slice(inicio, fim);
+  paginaAtual = pagina;
+  const inicio = (pagina - 1) * itensPorPagina;
+  const fim = inicio + itensPorPagina;
+  const itensPagina = dados.slice(0, itensPorPagina); // já paginado no backend
 
-    const tbody = $('#tabela-body');
-    tbody.empty();
+  const tbody = $('#tabela-body');
+  tbody.empty();
 
-    itensPagina.forEach((item, index) => {
-      tbody.append(`
-        <tr data-index="${inicio + index}">
-          <td><img src="${item.foto}" width="50" height="50" style="object-fit:cover;"></td>
-          <td>${item.nome}</td>
-          <td>${calcularIdade(item.data_nascimento)} anos</td>
-          <td>${item.desaparecidoEm}</td>
-          <td>${item.cidade}</td>
-          <td>
-            <button class="btn btn-sm btn-info visualizar"><i class="fas fa-eye"></i></button>
-            <button class="btn btn-sm btn-primary editar"><i class="fas fa-edit"></i></button>
-            <button class="btn btn-sm btn-danger excluir"><i class="fas fa-trash"></i></button>
-          </td>
-        </tr>
-      `);
-    });
+  itensPagina.forEach((item, index) => {
+    tbody.append(`
+      <tr data-index="${inicio + index}">
+        <td><img src="${item.foto}" width="50" height="50" style="object-fit:cover;"></td>
+        <td>${item.nome_completo}</td>
+        <td>${calcularIdade(item.data_nascimento)} anos</td>
+        <td>${formatarData(item.data_desaparecimento)}</td>
+        <td>${item.cidade}</td>
+        <td>
+          <button class="btn btn-sm btn-info visualizar"><i class="fas fa-eye"></i></button>
+          <button class="btn btn-sm btn-primary editar"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-sm btn-danger excluir"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>
+    `);
+  });
 
-    $('.visualizar').click(function() {
-      const index = $(this).closest('tr').data('index');
-      mostrarModalVisualizar(dados[index]);
-    });
+  $('.visualizar').click(function() {
+    const index = $(this).closest('tr').data('index') % itensPorPagina;
+    mostrarModalVisualizar(dados[index]);
+  });
 
-    $('.editar').click(function() {
-      const index = $(this).closest('tr').data('index');
-      mostrarModalEditar(dados[index]);
-    });
+  $('.editar').click(function() {
+    const index = $(this).closest('tr').data('index') % itensPorPagina;
+    mostrarModalEditar(dados[index]);
+  });
 
-    $('.excluir').click(function() {
-      const index = $(this).closest('tr').data('index');
-      mostrarModalExcluir(dados[index]);
-    });
-  }
+  $('.excluir').click(function() {
+    const index = $(this).closest('tr').data('index') % itensPorPagina;
+    mostrarModalExcluir(dados[index]);
+  });
+}
 
-  function criarPaginacao() {
-  const totalPaginas = Math.ceil(dados.length / itensPorPagina);
-  let inicio = Math.max(1, paginaAtual - 2);
-  let fim = Math.min(totalPaginas, paginaAtual + 2);
+
+  function criarPaginacao(response) {
+  const totalPaginas = response.last_page;
+  const paginaAtual = response.current_page;
 
   const termo = new URLSearchParams(window.location.search).get('q') || '';
   const filtroURL = termo ? `&q=${encodeURIComponent(termo)}` : '';
+
+  let inicio = Math.max(1, paginaAtual - 2);
+  let fim = Math.min(totalPaginas, paginaAtual + 2);
 
   let pagHtml = `
     <nav aria-label="Navegação de páginas" class="mt-5">
@@ -318,20 +326,13 @@ $.ajax({
     return idade;
   }
 
-  function mostrarModalVisualizar(item) {
-    $('#viewFoto').attr('src', item.foto);
-    $('#viewNome').text(item.nome);
-    $('#viewIdade').text(calcularIdade(item.data_nascimento) + ' anos');
-    $('#viewData').text(item.desaparecidoEm);
-    $('#viewCidade').text(item.cidade);
-    new bootstrap.Modal($('#visualizarModal')).show();
-  }
+const baseUrl = 'http://localhost:8000'; // <- Definido explicitamente
 
 function mostrarModalEditar(item) {
   itemAtual = item;
 
-  $('#editIndex').val(item.id); // <- garante o ID
-  $('#editNome').val(item.nome);
+  $('#editIndex').val(item.id);
+  $('#editNome').val(item.nome_completo);
   $('#editIdade').val(calcularIdade(item.data_nascimento));
   $('#editData').val(new Date(item.data_desaparecimento || item.data_nascimento).toISOString().split('T')[0]);
   $('#editCidade').val(item.cidade);
@@ -340,32 +341,34 @@ function mostrarModalEditar(item) {
   new bootstrap.Modal($('#editarModal')).show();
 }
 
-
-  $('#btnSalvarEdicao').click(function() {
-  const id = $('#editIndex').val(); // agora usando diretamente o valor armazenado no campo hidden
-  const nome = $('#editNome').val();
+$('#btnSalvarEdicao').click(function() {
+  const id = $('#editIndex').val();
+  const nome_completo = $('#editNome').val();
   const cidade = $('#editCidade').val();
   const data_desaparecimento = $('#editData').val();
   const foto = $('#editFoto').val();
 
   $.ajax({
-    url: 'back/consultas/editarDesaparecidos.php',
+    url: `${baseUrl}/api/desaparecidos/${id}`, // ← URL absoluta com porta
     type: 'POST',
     contentType: 'application/json',
+    headers: {
+      'X-HTTP-Method-Override': 'PUT' // Laravel interpreta como PUT
+    },
     data: JSON.stringify({
-      id,
-      nome,
+      _method: 'PUT',
+      nome_completo,
       cidade,
       data_desaparecimento,
       foto
     }),
     success: function(response) {
-      alert(response?.sucesso || 'Alterações salvas com sucesso!');
+      alert('Alterações salvas com sucesso!');
       carregarDados();
       bootstrap.Modal.getInstance($('#editarModal')).hide();
     },
     error: function(xhr) {
-      alert('Erro ao editar: ' + (xhr.responseJSON?.erro || 'Erro desconhecido'));
+      alert('Erro ao editar: ' + (xhr.responseJSON?.message || 'Erro desconhecido'));
     }
   });
 });
