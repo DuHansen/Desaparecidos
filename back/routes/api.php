@@ -1,10 +1,12 @@
 <?php
+
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Http\Controllers\Api\DesaparecidosController;
 
-// Agrupe as rotas que precisam de session com o middleware 'web'
+// Rotas de login com sessão (usam o middleware web)
 Route::middleware(['web'])->group(function () {
     Route::post('/login', function (Request $request) {
         $credentials = $request->only('email', 'password');
@@ -39,9 +41,9 @@ Route::middleware(['web'])->group(function () {
         }
     });
 
-     Route::post('/logout', function (\Illuminate\Http\Request $request) {
-        $request->session()->invalidate();      // Destroi a sessão
-        $request->session()->regenerateToken(); // Gera um novo CSRF token
+    Route::post('/logout', function (Request $request) {
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json([
             'success' => true,
@@ -49,4 +51,21 @@ Route::middleware(['web'])->group(function () {
         ]);
     });
 });
+
+
+// Listar todos com filtro/paginação
+Route::get('/desaparecidos', [DesaparecidosController::class, 'index']);
+
+// Cadastrar novo desaparecido
+Route::post('/desaparecidos', [DesaparecidosController::class, 'store']);
+
+// Ver um desaparecido específico
+Route::get('/desaparecidos/{id}', [DesaparecidosController::class, 'show']);
+
+// Atualizar um desaparecido
+Route::put('/desaparecidos/{id}', [DesaparecidosController::class, 'update']);
+Route::post('/desaparecidos/{id}', [DesaparecidosController::class, 'update']); // compatível com override _method
+
+// Deletar um desaparecido
+Route::delete('/desaparecidos/{id}', [DesaparecidosController::class, 'destroy']);
 

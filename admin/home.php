@@ -92,7 +92,7 @@ include 'includes/headerUser.php';
             <div class="row mb-3">
               <div class="col-md-6">
                 <label for="editNome" class="form-label">Nome Completo</label>
-                <input type="text" class="form-control" id="editNome" name="nome" required>
+                <input type="text" class="form-control" id="editNome" name="nome_completo" required>
               </div>
               <div class="col-md-6">
                 <label for="editIdade" class="form-label">Idade</label>
@@ -326,13 +326,20 @@ $(document).ready(function() {
     return idade;
   }
 
-const baseUrl = 'http://localhost:8000'; // <- Definido explicitamente
+  function mostrarModalVisualizar(item) {
+    $('#viewFoto').attr('src', item.foto);
+    $('#viewNome').text(item.nome);
+    $('#viewIdade').text(calcularIdade(item.data_nascimento) + ' anos');
+    $('#viewData').text(item.desaparecidoEm);
+    $('#viewCidade').text(item.cidade);
+    new bootstrap.Modal($('#visualizarModal')).show();
+  }
 
 function mostrarModalEditar(item) {
   itemAtual = item;
 
-  $('#editIndex').val(item.id);
-  $('#editNome').val(item.nome_completo);
+  $('#editIndex').val(item.id); // <- garante o ID
+  $('#editNome').val(item.nome_completo); // não item.nome
   $('#editIdade').val(calcularIdade(item.data_nascimento));
   $('#editData').val(new Date(item.data_desaparecimento || item.data_nascimento).toISOString().split('T')[0]);
   $('#editCidade').val(item.cidade);
@@ -340,38 +347,40 @@ function mostrarModalEditar(item) {
 
   new bootstrap.Modal($('#editarModal')).show();
 }
+const baseUrl = 'http://localhost:8000';
 
-$('#btnSalvarEdicao').click(function() {
+$('#btnSalvarEdicao').click(function () {
   const id = $('#editIndex').val();
   const nome_completo = $('#editNome').val();
   const cidade = $('#editCidade').val();
   const data_desaparecimento = $('#editData').val();
   const foto = $('#editFoto').val();
 
+  const payload = {
+    nome_completo,
+    cidade,
+    data_desaparecimento,
+    foto
+  };
+
   $.ajax({
-    url: `${baseUrl}/api/desaparecidos/${id}`, // ← URL absoluta com porta
-    type: 'POST',
-    contentType: 'application/json',
-    headers: {
-      'X-HTTP-Method-Override': 'PUT' // Laravel interpreta como PUT
-    },
-    data: JSON.stringify({
-      _method: 'PUT',
-      nome_completo,
-      cidade,
-      data_desaparecimento,
-      foto
-    }),
-    success: function(response) {
+    url: `${baseUrl}/api/desaparecidos/${id}`,
+    type: 'PUT',
+    contentType: 'application/json', // IMPORTANTE
+    data: JSON.stringify(payload),   // Envio como JSON puro
+    success: function (response) {
       alert('Alterações salvas com sucesso!');
       carregarDados();
       bootstrap.Modal.getInstance($('#editarModal')).hide();
     },
-    error: function(xhr) {
+    error: function (xhr) {
+      console.error(xhr);
       alert('Erro ao editar: ' + (xhr.responseJSON?.message || 'Erro desconhecido'));
     }
   });
 });
+
+
 
 
   function mostrarModalExcluir(item) {
