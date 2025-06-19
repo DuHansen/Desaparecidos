@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Desaparecidos;
-
+use Carbon\Carbon;
 class DesaparecidosController extends Controller
 {
 public function index(Request $request)
@@ -32,11 +32,69 @@ public function index(Request $request)
     }
 
     return response()->json($query->paginate($itensPorPagina));
+
 }
 
-    /**
-     * Cadastra um novo desaparecido.
-     */
+
+public function recentes()
+{
+    $dados = Desaparecidos::select([
+        'id',
+        'nome_completo',
+        'foto',
+        'data_nascimento',
+        'data_desaparecimento',
+        'cidade',
+        'estado',
+        'status',
+        'caracteristicas',
+        'contato_responsavel as contatoFamilia',
+        'local_desaparecimento as ultimoLocalVisto'
+    ])
+    ->where('status', 'desaparecido')
+    ->whereNotNull('data_desaparecimento')
+    ->orderBy('data_desaparecimento', 'desc')
+    ->limit(5)
+    ->get()
+    ->map(function ($pessoa) {
+        // Calcular idade
+        $pessoa->idade = $pessoa->data_nascimento
+            ? Carbon::parse($pessoa->data_nascimento)->age . ' anos'
+            : '-';
+
+        // Calcular tempo desaparecido
+        if ($pessoa->data_desaparecimento) {
+            $dias = Carbon::parse($pessoa->data_desaparecimento)->diffInDays(Carbon::now());
+
+            if ($dias < 1) {
+                $pessoa->tempo_desaparecido = 'menos de 24h';
+            } elseif ($dias < 7) {
+                $pessoa->tempo_desaparecido = "$dias dia" . ($dias > 1 ? 's' : '');
+            } elseif ($dias < 30) {
+                $semanas = floor($dias / 7);
+                $pessoa->tempo_desaparecido = "$semanas semana" . ($semanas > 1 ? 's' : '');
+            } elseif ($dias < 365) {
+                $meses = floor($dias / 30);
+                $pessoa->tempo_desaparecido = "$meses mês" . ($meses > 1 ? 'es' : '');
+            } else {
+                $anos = floor($dias / 365);
+                $pessoa->tempo_desaparecido = "$anos ano" . ($anos > 1 ? 's' : '');
+            }
+        } else {
+            $pessoa->tempo_desaparecido = '-';
+        }
+
+        return $pessoa;
+    });
+
+    return response()->json([
+        'data' => $dados,
+        'total' => $dados->count()
+    ]);
+}
+
+
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -87,7 +145,7 @@ public function index(Request $request)
     /**
      * Atualiza um desaparecido.
      */
-    public function update(Request $request, string $id)
+   public function update(Request $request, string $id)
     {
         $registro = Desaparecidos::find($id);
 
@@ -107,7 +165,7 @@ public function index(Request $request)
         $registro->update($validated);
 
         return response()->json($registro);
-    }
+    } 
 
 
     /**

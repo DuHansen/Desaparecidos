@@ -1,7 +1,6 @@
 <?php
-
+use App\Http\Controllers\Api\DesaparecidosController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/t', function () {
-    return "laranja";
-});
+
+Route::get('/desaparecidos/recentes', [DesaparecidosController::class, 'recentes']);
